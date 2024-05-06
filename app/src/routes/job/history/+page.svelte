@@ -1,10 +1,10 @@
 <script lang="ts">
-	import * as Table from '$lib/components/ui/table/index.js';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as Table from '$lib/components/ui/table/index.ts';
+	import * as Dialog from '$lib/components/ui/dialog/index.ts';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
+	import { Button, buttonVariants } from '$lib/components/ui/button/index.ts';
+	import { Input } from '$lib/components/ui/input/index.ts';
+	import { Label } from '$lib/components/ui/label/index.ts';
 	const invoices = [
 		{
 			id: 1,
