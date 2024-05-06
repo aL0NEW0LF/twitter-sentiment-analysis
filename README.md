@@ -27,3 +27,45 @@ To start the frontend, run the following command:
 ```bash
 pnpm run dev --open
 ```
+
+### Backend
+
+To run the backend, navigate to the `api` directory and run the following commands:
+
+```bash
+cd api
+```
+
+**Windows**
+
+```bash
+py -3 -m venv .venv
+```
+
+**MacOS/Linus**
+
+```bash
+python3 -m venv .venv
+```
+
+Then, activate the env:
+
+**Windows**
+
+```bash
+.venv\Scripts\activate
+```
+
+**MacOS/Linus**
+
+```bash
+. .venv/bin/activate
+```
+
+You can run the following command to install the dependencies:
+
+```bash
+pip3 install -r requirements.txt
+```
+
+Then you are good to go.
