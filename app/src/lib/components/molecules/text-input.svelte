@@ -26,6 +26,6 @@
 	class="flex flex-col gap-4"
 >
 	<Label>Text</Label>
-	<Textarea class="w-96" id="data" name="data" placeholder="Enter text here" required />
+	<Textarea class="w-96" id="textdata" name="textdata" placeholder="Enter text here" required />
 	<Button class="" variant="outline" type="submit">Upload data</Button>
 </form>
