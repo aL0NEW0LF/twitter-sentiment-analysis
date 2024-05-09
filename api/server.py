@@ -132,7 +132,7 @@ def predict_file():
 @app.route('/predict-text', methods=['GET', 'POST'])
 def predict_text():
     try:
-        text = flask.request.form['text']
+        text = flask.request.form['textdata']
         
         print(text)
 
