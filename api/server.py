@@ -1,10 +1,6 @@
 import flask
-import re
-from decouple import config
 from flask_cors import CORS
 import pandas as pd
-import string
-from nltk.corpus import stopwords
 from kafka import KafkaProducer, KafkaConsumer
 import json
 import threading
@@ -32,46 +28,6 @@ class KafkaConsumerThread(threading.Thread):
 
 app = flask.Flask(__name__)
 CORS(app)
-
-def write_row_in_mongo(df):
-    mongo_uri = config('MONGOACCESS')
-
-    df.write.format("mongo").mode("append").option("uri", mongo_uri).save()
-
-def processTweet(tweet):
-    if isinstance(tweet, (float, int)):
-        return str(tweet)
-    # remove user handles tagged in the tweet
-    tweet = re.sub('@[^\s]+','',tweet)
-    # remove words that start with th dollar sign    
-    tweet = re.sub(r'\$\w*', '', tweet)
-    # remove hyperlinks
-    tweet = re.sub(r'https?:\/\/.*\/\w*', '', tweet)
-    tweet = re.sub(r'(?:^|[\s,])([\w-]+\.[a-z]{2,}\S*)\b','',tweet)
-    # remove hashtags
-    tweet = re.sub(r'#\w*', '', tweet)
-    # remove all kinds of punctuations and special characters
-    punkt = string.punctuation + r'''`‘’)(+÷×؛<>_()*&^%][ـ،/:"؟.,'{}~¦+|!”،.”…“–ـ”.°ा'''
-    tweet = tweet.translate(str.maketrans('', '', punkt))
-    # remove words with 2 or fewer letters
-    tweet = re.sub(r'\b\w{1,2}\b', '', tweet)
-    # remove HTML special entities (e.g. &amp;)
-    tweet = re.sub(r'\&\w*;', '', tweet)
-    # remove whitespace (including new line characters)
-    tweet = re.sub(r'\s\s+', ' ', tweet)
-    # remove stopwords
-    tweet = re.sub(r'\b('+ '|'.join(stopword for stopword in stopwords.words('english'))+ r')\b', '', tweet)
-    # remove single space remaining at the front of the tweet.
-    tweet = tweet.lstrip(' ')
-    tweet = tweet.rstrip(' ')
-    # remove characters beyond Basic Multilingual Plane (BMP) of Unicode:
-    tweet = ''.join(c for c in tweet if c <= '\uffff')
-    tweet = re.sub(r'([^\u1F600-\u1F6FF\s])','', tweet)
-    # lowercase
-    tweet = tweet.lower()
-    # remove extra spaces
-    tweet = re.sub(r'[\s]{2, }', ' ', tweet)
-    return tweet
 
 @app.route('/')
 def home():
@@ -143,5 +99,4 @@ def predict_text():
     
 if __name__ == "__main__":
     producer = KafkaProducer(bootstrap_servers='localhost:9092')
-    global job_id
     app.run(port=5000)

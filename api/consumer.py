@@ -8,12 +8,20 @@ from nltk.corpus import stopwords
 import findspark
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json
-from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import udf
+from pyspark.sql.functions import lit
+from pyspark.sql.types import StructType, StructField, StringType
 from pyspark.ml.tuning import CrossValidatorModel
 from pyspark.ml import PipelineModel
 import random
 import hashlib
+import time
+import threading
+
+        
+def write_row_in_mongo(df):
+    # mongo_uri = "mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]]"
+    mongo_uri = "mongodb://localhost:27017/TwitterSentimentAnalysis.jobs"
+    df.write.format("mongo").mode("append").option("uri", mongo_uri).save()
 
 def processTweet(tweet):
     tweet = tweet.asDict().get('text')
@@ -79,15 +87,29 @@ def process(df,epoch_id):
     # predictions
     predictions = cvModel.transform(preprocessed_dataset)
     
-    producer = KafkaProducer(bootstrap_servers='localhost:9092')
+    # producer = KafkaProducer(bootstrap_servers='localhost:9092')
     response = predictions.toPandas().to_dict(orient='records')
     
     logging.basicConfig(level=logging.INFO)
-    # producer = KafkaProducer(bootstrap_servers='localhost:9092')
-    # random_id = hashlib.sha1(str(random.randint(1, 1000000)).encode()).hexdigest()
-    # producer.send('job_id', value=json.dumps(random_id).encode('utf-8'))
-    print('waaaaaaa \n\n\n\n\n',epoch_id,'\n\n\n\n\n')
-    print('waaaaaaa \n\n\n\n\n',len(response),'\n\n\n\n\n')
+    print(f'\n\n\n\n\nBatch Number: {epoch_id}\nDataframe Length: {len(response)}\n\n\n\n\n')
+    # Start a new thread that checks the query status
+    producer = KafkaProducer(bootstrap_servers='localhost:9092')
+    threading.Thread(target=check_query_status, args=(query, producer, predictions)).start()
+    
+def check_query_status(query, producer, df):
+    while query.status['isDataAvailable']:
+        print('Data available. Checking again in 1 second...')
+        time.sleep(1)  # sleep for a while before checking the status again
+    print('Data not available. Stopping the query...\n\n',query.lastProgress)
+    
+    random_id = hashlib.sha1(str(random.randint(1, 1000000)).encode()).hexdigest()
+    df = df.withColumn('job_id', lit(random_id))
+    df = df.select('job_id', 'text', 'probability', 'prediction')
+    df = df.withColumn("probability", df["probability"].cast('string'))
+    write_row_in_mongo(df)
+    producer.send('job_id', value=json.dumps(random_id).encode('utf-8'))
+    print('sent Job ID:', random_id)
+    
 if __name__ == '__main__':
     findspark.init()
     
@@ -98,13 +120,10 @@ if __name__ == '__main__':
         .builder \
         .master("local[*]") \
         .appName("TwitterSentimentAnalysis") \
-        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2") \
+        .config("spark.mongodb.input.uri", "mongodb://localhost:27017/TwitterSentimentAnalysis.jobs") \
+        .config("spark.mongodb.output.uri", "mongodb://localhost:27017/TwitterSentimentAnalysis.jobs") \
+        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1") \
         .getOrCreate()
-        # .config("spark.mongodb.input.uri",
-        #         config('MONGOACCESS')) \
-        # .config("spark.mongodb.output.uri",
-        #         config('MONGOACCESS')) \
-        # .config("spark.jars.packages", "org.mongodb.spark:mongo-spark-connector_2.12:3.0.1") \
 
     # Spark Context
     sc = spark.sparkContext
@@ -118,6 +137,7 @@ if __name__ == '__main__':
         .format("kafka") \
         .option("kafka.bootstrap.servers", "localhost:9092") \
         .option("subscribe", "twitter") \
+        .option("maxOffsetsPerTrigger", "1000000") \
         .option("startingOffsets", "latest") \
         .option("header", "true") \
         .load() \
@@ -125,15 +145,10 @@ if __name__ == '__main__':
 
     df = df \
         .withColumn("text", from_json("message", schema))
-
     
     query = df \
         .writeStream \
         .foreachBatch(process) \
         .start()
-
-    query.awaitTermination()
     
-    producer = KafkaProducer(bootstrap_servers='localhost:9092')
-    random_id = hashlib.sha1(str(random.randint(1, 1000000)).encode()).hexdigest()
-    producer.send('job_id', value=json.dumps(random_id).encode('utf-8'))
+    query.awaitTermination()
