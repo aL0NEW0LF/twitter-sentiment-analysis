@@ -4,6 +4,9 @@ import pandas as pd
 from kafka import KafkaProducer, KafkaConsumer
 import json
 import threading
+import random
+import hashlib
+import datetime
 
 class KafkaConsumerThread(threading.Thread):
     def __init__(self, topic_name):
@@ -48,25 +51,27 @@ def predict_file():
             df = pd.read_csv(file_path, sep='\t')
         else:
             return flask.Response('File type not supported', status=400)
-        
-        # logging.basicConfig(level=logging.INFO) 
+
         responseDICT = df.to_dict(orient='records')
-        
+        random_id = hashlib.sha1(str(random.randint(1, 1000000)).encode()).hexdigest()
         for tweet in responseDICT:
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             data = {
-                'text': tweet['text']
+                'job_id': random_id,
+                'type': 'file',
+                'text': tweet['text'],
+                'df_length' : len(df),
+                'timestamp': timestamp
             }
             producer.send('twitter', value=json.dumps(data).encode('utf-8'))
         consumer_thread = KafkaConsumerThread('job_id')
         consumer_thread.start()
         consumer_thread.stop()
         consumer_thread.join()
-        print("hamid: ",consumer_thread.job_id)
         response = flask.Response(response=consumer_thread.job_id, status=200, mimetype='application/json')
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST'
         response.headers['Access-Control-Allow-Credentials'] = True
-        print(response)
         
         return response
     
@@ -80,13 +85,22 @@ def predict_text():
         
         print(text)
 
-        df = pd.DataFrame({'message': [text]})
+        random_id = hashlib.sha1(str(random.randint(1, 1000000)).encode()).hexdigest()
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data = {
+            'job_id': random_id,
+            'type': 'text',
+            'text': text,
+            'df_length' : 1,
+            'timestamp': timestamp
+        }
+        producer.send('twitter', value=json.dumps(data).encode('utf-8'))
+        consumer_thread = KafkaConsumerThread('job_id')
+        consumer_thread.start()
+        consumer_thread.stop()
+        consumer_thread.join()
 
-        responseJSON = df.to_json(orient='records')
-        
-        print(responseJSON)
-
-        response = flask.Response(response=responseJSON, status=200, mimetype='application/json')
+        response = flask.Response(response=consumer_thread.job_id, status=200, mimetype='application/json')
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST'
         response.headers['Access-Control-Allow-Credentials'] = True
