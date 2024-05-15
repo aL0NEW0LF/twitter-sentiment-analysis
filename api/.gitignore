@@ -20,5 +20,7 @@ var/
 .venv/
 /.venv/
 .env
+venv/
+/venv/
 
 */tmp
