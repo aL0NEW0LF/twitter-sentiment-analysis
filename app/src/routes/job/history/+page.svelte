@@ -5,111 +5,66 @@
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.ts';
 	import { Input } from '$lib/components/ui/input/index.ts';
 	import { Label } from '$lib/components/ui/label/index.ts';
-	const invoices = [
-		{
-			id: 1,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'text'
-		},
-		{
-			id: 2,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'file'
-		},
-		{
-			id: 3,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'text'
-		},
-		{
-			id: 4,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'file'
-		},
-		{
-			id: 5,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'text'
-		},
-		{
-			id: 6,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'file'
-		},
-		{
-			id: 7,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'text'
-		},
-		{
-			id: 8,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'file'
-		},
-		{
-			id: 9,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'text'
-		},
-		{
-			id: 10,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'file'
-		},
-		{
-			id: 11,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'text'
-		},
-		{
-			id: 12,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'file'
-		},
-		{
-			id: 13,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'text'
-		},
-		{
-			id: 14,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'file'
-		},
-		{
-			id: 15,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'text'
-		},
-		{
-			id: 16,
-			timestamp: '2021-10-01 12:00:00',
-			type: 'file'
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import { error } from '@sveltejs/kit';
+
+	async function fetchHistory() {
+		const response = await fetch('http://127.0.0.1:5000/jobs/history', { method: 'POST' });
+		const jobs = await response.json();
+
+		if (!response.ok) {
+			error(404, {
+				message: 'Failed to fetch jobs history.'
+			});
 		}
-	];
+
+		return jobs;
+	}
 </script>
 
 <Table.Root>
 	<Table.Caption>A list of your predictions history.</Table.Caption>
 	<Table.Header>
 		<Table.Row>
-			<Table.Head class="w-72">ID</Table.Head>
+			<Table.Head class="w-96">ID</Table.Head>
 			<Table.Head>timestamp</Table.Head>
 			<Table.Head>type</Table.Head>
+			<Table.Head></Table.Head>
 		</Table.Row>
 	</Table.Header>
-	<Table.Body>
-		{#each invoices as invoice, i (i)}
+	{#await fetchHistory()}
+		<Table.Body>
 			<Table.Row>
-				<Table.Cell class="w-72 font-medium">{invoice.id}</Table.Cell>
-				<Table.Cell>{invoice.timestamp}</Table.Cell>
-				<Table.Cell>{invoice.type}</Table.Cell>
-				<Table.Cell class="w-10">
-					<Button variant="outline" size="icon" href="/job/history/{invoice.id}">
-						<ChevronRight class="h-4 w-4" />
-					</Button>
+				<Table.Cell class="w-[32.25%]">
+					<Skeleton class="h-4 w-full" />
+				</Table.Cell>
+				<Table.Cell class="w-[32.25%]">
+					<Skeleton class="h-4 w-full" />
+				</Table.Cell>
+				<Table.Cell class="w-[32.25%]">
+					<Skeleton class="h-4 w-full" />
+				</Table.Cell>
+				<Table.Cell class="w-14">
+					<Skeleton class="h-4 w-full" />
 				</Table.Cell>
 			</Table.Row>
-		{/each}
-	</Table.Body>
+		</Table.Body>
+	{:then jobs}
+		<Table.Body>
+			{#each jobs as job, i (i)}
+				<Table.Row>
+					<Table.Cell class="w-1/3 font-medium">{job.job_id}</Table.Cell>
+					<Table.Cell class="w-1/3">{job.timestamp}</Table.Cell>
+					<Table.Cell class="w-1/3">{job.type}</Table.Cell>
+					<Table.Cell class="w-14">
+						<Button variant="outline" size="icon" href="/job/history/{job.job_id}">
+							<ChevronRight class="h-4 w-4" />
+						</Button>
+					</Table.Cell>
+				</Table.Row>
+			{/each}
+		</Table.Body>
+	{:catch error}
+		<p style="color: red">{error.message}</p>
+	{/await}
 </Table.Root>
