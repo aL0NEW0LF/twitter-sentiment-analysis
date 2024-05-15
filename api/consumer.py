@@ -7,24 +7,21 @@ import string
 from nltk.corpus import stopwords
 import findspark
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json
-from pyspark.sql.functions import lit
-from pyspark.sql.types import StructType, StructField, StringType
+from pyspark.sql.functions import col, from_json
+from pyspark.sql.functions import udf
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from pyspark.ml.tuning import CrossValidatorModel
 from pyspark.ml import PipelineModel
-import random
-import hashlib
 import time
 import threading
 
-        
 def write_row_in_mongo(df):
     # mongo_uri = "mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]]"
-    mongo_uri = "mongodb://localhost:27017/TwitterSentimentAnalysis.jobs"
+    mongo_uri = "mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/TwitterSentimentAnalysis.jobs?retryWrites=true&w=majority&appName=Cluster"
     df.write.format("mongo").mode("append").option("uri", mongo_uri).save()
 
 def processTweet(tweet):
-    tweet = tweet.asDict().get('text')
+    
     if isinstance(tweet, (float, int)):
         tweet = str(tweet)
     # remove user handles tagged in the tweet
@@ -58,23 +55,43 @@ def processTweet(tweet):
     # remove extra spaces
     tweet = re.sub(r'[\s]{2, }', ' ', tweet)
     return tweet
-
+def correct_label(label):
+    if label == 0:
+        return 'Irrelevant'
+    elif label == 1:
+        return 'Negative'
+    elif label == 2:
+        return 'Neutral'
+    else:
+        return 'Positive'
 def process(df,epoch_id):
+    
+    global processed
+    global df_len
+    
     if df.isEmpty():
         return
-    
+    print(df.show())
+    if df_len == 0:
+        df_len = int(df.select('df_length').first()[0])
+        
     df = df.drop('message')
-    # Convert DataFrame to Pandas DataFrame
     pdf = df.toPandas()
-
+    l1 = len(pdf)
     pdf['clean_text'] = pdf['text'].apply(processTweet)
     pdf.drop_duplicates(subset=['clean_text'],inplace=True)
+    pdf.drop(['df_length'],axis=1,inplace=True)
     pdf.drop(['text'],axis=1,inplace=True)
     pdf.rename(columns={"clean_text": "text"},inplace=True)
-    pdf.dropna(inplace=True)
+    pdf.dropna(subset=['text'], inplace=True)
     pdf.drop(pdf[pdf['text'] == ''].index, inplace = True)
     pdf.drop(pdf[pdf['text'] == ' '].index, inplace = True)
     pdf.drop(pdf[pdf['text'] == 'nan'].index, inplace = True)
+    l2 = len(pdf)
+    
+    ln = l1 - l2
+    processed += l2
+    df_len -= ln
     
     spark_df = spark.createDataFrame(pdf)
     
@@ -87,29 +104,30 @@ def process(df,epoch_id):
     # predictions
     predictions = cvModel.transform(preprocessed_dataset)
     
-    # producer = KafkaProducer(bootstrap_servers='localhost:9092')
-    response = predictions.toPandas().to_dict(orient='records')
+    predictions = predictions.withColumn('prediction', predictions['prediction'].cast('int'))
+    correct_label_udf = udf(correct_label, StringType())
+    predictions = predictions.withColumn('prediction', correct_label_udf(predictions['prediction']))
     
+    if df_len == processed:
+        df_len = 0
+        processed = 0
     logging.basicConfig(level=logging.INFO)
-    print(f'\n\n\n\n\nBatch Number: {epoch_id}\nDataframe Length: {len(response)}\n\n\n\n\n')
     # Start a new thread that checks the query status
     producer = KafkaProducer(bootstrap_servers='localhost:9092')
-    threading.Thread(target=check_query_status, args=(query, producer, predictions)).start()
+    threading.Thread(target=check_query_status, args=(query, producer, predictions, processed, df_len)).start()
     
-def check_query_status(query, producer, df):
+def check_query_status(query, producer, df, processed, df_len):
     while query.status['isDataAvailable']:
-        print('Data available. Checking again in 1 second...')
-        time.sleep(1)  # sleep for a while before checking the status again
-    print('Data not available. Stopping the query...\n\n',query.lastProgress)
-    
-    random_id = hashlib.sha1(str(random.randint(1, 1000000)).encode()).hexdigest()
-    df = df.withColumn('job_id', lit(random_id))
-    df = df.select('job_id', 'text', 'probability', 'prediction')
+        time.sleep(1)
+    random_id = df.select('job_id').first()[0]
+    df = df.select('job_id', 'type', 'timestamp', 'text', 'probability', 'prediction')
     df = df.withColumn("probability", df["probability"].cast('string'))
     write_row_in_mongo(df)
-    producer.send('job_id', value=json.dumps(random_id).encode('utf-8'))
-    print('sent Job ID:', random_id)
-    
+    if df_len == processed:
+        producer.send('job_id', value=json.dumps(random_id).encode('utf-8'))
+        df_len = 0
+        processed = 0
+        
 if __name__ == '__main__':
     findspark.init()
     
@@ -120,8 +138,8 @@ if __name__ == '__main__':
         .builder \
         .master("local[*]") \
         .appName("TwitterSentimentAnalysis") \
-        .config("spark.mongodb.input.uri", "mongodb://localhost:27017/TwitterSentimentAnalysis.jobs") \
-        .config("spark.mongodb.output.uri", "mongodb://localhost:27017/TwitterSentimentAnalysis.jobs") \
+        .config("spark.mongodb.input.uri", "mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/TwitterSentimentAnalysis.jobs?retryWrites=true&w=majority&appName=Cluster") \
+        .config("spark.mongodb.output.uri", "mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/TwitterSentimentAnalysis.jobs?retryWrites=true&w=majority&appName=Cluster") \
         .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1") \
         .getOrCreate()
 
@@ -130,7 +148,14 @@ if __name__ == '__main__':
     sc.setLogLevel('ERROR')
     
     # Schema for the incoming data
-    schema = StructType([StructField("text", StringType())])
+    schema = StructType([
+        StructField("job_id", StringType()),
+        StructField("type", StringType()),
+        StructField("text", StringType()),
+        StructField("df_length", IntegerType()),
+        StructField("timestamp", StringType())
+    ])
+
     # Read the data from kafka
     df = spark \
         .readStream \
@@ -142,9 +167,13 @@ if __name__ == '__main__':
         .option("header", "true") \
         .load() \
         .selectExpr("CAST(value AS STRING) as message")
-
+    
     df = df \
-        .withColumn("text", from_json("message", schema))
+        .withColumn("data", from_json("message", schema)) \
+        .select(col("data.*"))
+        
+    df_len = 0
+    processed = 0
     
     query = df \
         .writeStream \
@@ -152,3 +181,4 @@ if __name__ == '__main__':
         .start()
     
     query.awaitTermination()
+    
