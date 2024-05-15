@@ -1,6 +1,6 @@
 import time
 from urllib import response
-from flask import Response, stream_with_context, request, Flask
+from flask import Response, jsonify, stream_with_context, request, Flask
 from flask_cors import CORS
 import pandas as pd
 from kafka import KafkaProducer, KafkaConsumer
@@ -19,7 +19,7 @@ class JSONEncoder(json.JSONEncoder):
             return str(o)
         return json.JSONEncoder.default(self, o)
     
-""" class KafkaConsumerThread(threading.Thread):
+class KafkaConsumerThread(threading.Thread):
     def __init__(self, topic_name):
         threading.Thread.__init__(self)
         self.stop_event = threading.Event()
@@ -38,7 +38,7 @@ class JSONEncoder(json.JSONEncoder):
             for message in self.consumer:
                 if self.stop_event.is_set():
                     self.job_id = message.value
-                    break """
+                    break
 
 app = Flask(__name__)
 CORS(app)
@@ -47,7 +47,7 @@ CORS(app)
 def home():
     return "Hello World"
 
-""" @app.route('/predict/file/', methods=['GET', 'POST'])
+@app.route('/predict/file/', methods=['GET', 'POST'])
 def predict_file():
     try:
         file_path = request.files['datafile']
@@ -119,49 +119,6 @@ def predict_text():
         print(response)
         return response
     
-    except Exception as e:
-        return Response(response=str(e), status=500) """
-    
-@app.route('/predict/file/', methods=['GET', 'POST'])
-def predict_file():
-    try:
-        file_path = request.files['datafile']
-            
-        if file_path.filename.endswith('.csv'):
-            df = pd.read_csv(file_path)
-        elif file_path.filename.endswith('.xlsx'):
-            df = pd.read_excel(file_path)
-        elif file_path.filename.endswith('.json'):
-            df = pd.read_json(file_path)
-        elif file_path.filename.endswith('.txt'):
-            df = pd.read_csv(file_path, sep='\t')
-        else:
-            return Response('File type not supported', status=400)
-        
-        random_id = 'e2fe6972262e96e08cc1eacb8bc2e888e127477e'
-        time.sleep(5)
-        response = Response(response=JSONEncoder().encode({'job_id': random_id}), status=200, mimetype='application/json')
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST'
-        response.headers['Access-Control-Allow-Credentials'] = True
-        
-        return response
-    
-    except Exception as e:
-        return Response(response=str(e), status=500)
-    
-@app.route('/predict/text/', methods=['GET', 'POST'])
-def predict_text():
-    try:
-        random_id = 'e2fe6972262e96e08cc1eacb8bc2e888e127477e'
-        time.sleep(5)
-        response = Response(response=JSONEncoder().encode({'job_id': random_id}), status=200, mimetype='application/json')
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST'
-        response.headers['Access-Control-Allow-Credentials'] = True
-        
-        return response
-
     except Exception as e:
         return Response(response=str(e), status=500)
     
