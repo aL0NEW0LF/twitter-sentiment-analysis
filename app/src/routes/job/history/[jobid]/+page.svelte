@@ -16,6 +16,7 @@
 			method: 'POST'
 		});
 		const jobDetails = await response.json();
+		console.log(jobDetails);
 		return jobDetails;
 	}
 </script>
@@ -48,7 +49,12 @@
 			{#each jobDetails as jobDetail}
 				<Table.Row>
 					<Table.Cell class="w-1/2">{jobDetail.text}</Table.Cell>
-					<Table.Cell class="w-1/2">{jobDetail.probability}</Table.Cell>
+					<Table.Cell class="w-1/2">
+						<p>Irrelevant: {JSON.parse(jobDetail.probability)[0]}</p>
+						<p>Negative: {JSON.parse(jobDetail.probability)[1]}</p>
+						<p>Neutral: {JSON.parse(jobDetail.probability)[2]}</p>
+						<p>Positive: {JSON.parse(jobDetail.probability)[3]}</p>
+					</Table.Cell>
 					<Table.Cell class="w-40">{jobDetail.prediction}</Table.Cell>
 				</Table.Row>
 			{/each}

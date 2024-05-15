@@ -7,18 +7,19 @@
 	import { Label } from '$lib/components/ui/label/index.ts';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { error } from '@sveltejs/kit';
+	import type { PageData } from './$types';
 
 	async function fetchHistory() {
 		const response = await fetch('http://127.0.0.1:5000/jobs/history', { method: 'POST' });
 		const jobs = await response.json();
 
-		if (!response.ok) {
-			error(404, {
-				message: 'Failed to fetch jobs history.'
-			});
+		if (response.ok) {
+			console.log(jobs);
+			return jobs;
+		} else {
+			console.log(jobs);
+			error(response.status, { message: response.statusText });
 		}
-
-		return jobs;
 	}
 </script>
 

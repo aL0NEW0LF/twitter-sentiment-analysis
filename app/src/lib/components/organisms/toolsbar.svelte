@@ -67,10 +67,10 @@
 					<Menubar.SubContent>
 						<Dialog.Root bind:open={TextInputDialogOpen}>
 							<Dialog.Trigger
-								class="hover:bg-accent hover:text-accent-foreground relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none disabled:pointer-events-none disabled:opacity-50"
+								class="hover:bg-accent hover:text-accent-foreground relative flex cursor-pointer select-none items-center rounded-sm fill-white px-2 py-1.5 text-sm outline-none disabled:pointer-events-none disabled:opacity-50"
 								>With Text</Dialog.Trigger
 							>
-							<Dialog.Content class="w-96">
+							<Dialog.Content class="w-96 fill-white">
 								<Dialog.Header>
 									<Dialog.Title class="text-white">Predict With Text</Dialog.Title>
 								</Dialog.Header>
