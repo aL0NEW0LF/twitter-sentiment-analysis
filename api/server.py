@@ -24,7 +24,7 @@ class KafkaConsumerThread(threading.Thread):
         threading.Thread.__init__(self)
         self.stop_event = threading.Event()
         self.consumer = KafkaConsumer(
-            bootstrap_servers='localhost:9092',
+            bootstrap_servers='TheKafkaShore:9092',
             value_deserializer=lambda m: json.loads(m.decode('utf-8'))
         )
         self.consumer.subscribe([topic_name])
@@ -79,7 +79,7 @@ def predict_file():
         consumer_thread.start()
         consumer_thread.stop()
         consumer_thread.join()
-        response = Response(response=consumer_thread.job_id, status=200, mimetype='application/json')
+        response = Response(response=JSONEncoder().encode({"job_id" : consumer_thread.job_id}), status=200, mimetype='application/json')
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST'
         response.headers['Access-Control-Allow-Credentials'] = True
@@ -111,7 +111,7 @@ def predict_text():
         consumer_thread.stop()
         consumer_thread.join()
 
-        response = Response(response=consumer_thread.job_id, status=200, mimetype='application/json')
+        response = Response(response=JSONEncoder().encode({"job_id" : consumer_thread.job_id}), status=200, mimetype='application/json')
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST'
         response.headers['Access-Control-Allow-Credentials'] = True
@@ -125,7 +125,7 @@ def predict_text():
 @app.route('/jobs/<job_id>', methods=['POST'])
 def get_job(job_id):
     try:
-        client = MongoClient('mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/?retryWrites=true&w=majority&appName=Cluster', server_api=ServerApi('1'))
+        client = MongoClient('mongodb://host.docker.internal:27017/', server_api=ServerApi('1'))
         db = client['TwitterSentimentAnalysis']
         collection = db['jobs']
         result = collection.find({"job_id": job_id}, {"_id": 0, "job_id": 0, "type": 0, "timestamp": 0})
@@ -149,7 +149,7 @@ def get_job(job_id):
 @app.route('/jobs/history', methods=['POST'])
 def get_job_history():
     try:
-        client = MongoClient('mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/?retryWrites=true&w=majority&appName=Cluster', server_api=ServerApi('1'))
+        client = MongoClient('mongodb://host.docker.internal:27017/', server_api=ServerApi('1'))
         db = client['TwitterSentimentAnalysis']
         collection = db['jobs']
         result = collection.distinct('job_id')
@@ -177,5 +177,5 @@ def get_job_history():
         client.close()
 
 if __name__ == "__main__":
-    """ producer = KafkaProducer(bootstrap_servers='localhost:9092') """
-    app.run(debug=True, port=5000)
+    producer = KafkaProducer(bootstrap_servers='TheKafkaShore:9092')
+    app.run(debug=True, port=5000, host='0.0.0.0')
