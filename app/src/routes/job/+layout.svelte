@@ -6,7 +6,7 @@
 
 <div class="w-full">
 	<Toolsbar />
-	<div class="mx-4 flex flex-row gap-4">
+	<div class="mx-4 flex flex-col items-start gap-4">
 		<slot />
 	</div>
 </div>

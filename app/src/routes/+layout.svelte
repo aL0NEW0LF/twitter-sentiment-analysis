@@ -3,8 +3,6 @@
 	import './styles.css';
 </script>
 
-<div class="">
-	<main class="">
-		<slot />
-	</main>
-</div>
+<main class="flex w-full flex-col items-center justify-center">
+	<slot />
+</main>
