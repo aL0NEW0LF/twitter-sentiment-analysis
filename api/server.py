@@ -19,6 +19,15 @@ class JSONEncoder(json.JSONEncoder):
             return str(o)
         return json.JSONEncoder.default(self, o)
     
+def parse_job_details(details):
+    parsed_details = []
+    job_details_str = details[0]["job_details"]
+    for job in job_details_str:
+        parsed_job = json.loads(job)
+        parsed_job['probability'] = json.loads(parsed_job['probability'])
+        parsed_details.append(parsed_job)
+    return parsed_details
+
 class KafkaConsumerThread(threading.Thread):
     def __init__(self, topic_name):
         threading.Thread.__init__(self)
@@ -125,14 +134,55 @@ def predict_text():
 @app.route('/jobs/<job_id>', methods=['POST'])
 def get_job(job_id):
     try:
-        client = MongoClient('mongodb://host.docker.internal:27017/', server_api=ServerApi('1'))
+        client = MongoClient('mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/?retryWrites=true&w=majority&appName=Cluster', server_api=ServerApi('1'))
         db = client['TwitterSentimentAnalysis']
         collection = db['jobs']
         result = collection.find({"job_id": job_id}, {"_id": 0, "job_id": 0, "type": 0, "timestamp": 0})
-        responseJSON = []
-        for i in result:
-            responseJSON.append(i)
         
+        responseJSON = parse_job_details(result)
+        print(responseJSON)
+        response = Response(response=JSONEncoder().encode(responseJSON), status=200, mimetype='application/json')
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST'
+        response.headers['Access-Control-Allow-Credentials'] = True
+
+        return response
+    
+    except Exception as e:
+        return Response(response=str(e), status=500)
+    
+    finally:
+        client.close()
+
+@app.route('/jobs/<job_id>/count', methods=['POST'])
+def get_job_count(job_id):
+    try:
+        client = MongoClient('mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/?retryWrites=true&w=majority&appName=Cluster', server_api=ServerApi('1'))
+        db = client['TwitterSentimentAnalysis']
+        collection = db['jobs']
+        result = collection.find({"job_id": job_id}, {"_id": 0, "job_id": 0, "type": 0, "timestamp": 0})
+        
+        result = parse_job_details(result)
+
+        # prediction values count
+        positive = 0
+        negative = 0
+        neutral = 0
+        irrelevant = 0
+
+        for i in result:
+            if i['prediction'] == 'Positive':
+                positive += 1
+            elif i['prediction'] == 'Negative':
+                negative += 1
+            elif i['prediction'] == 'Neutral':
+                neutral += 1
+            else:
+                irrelevant += 1
+
+        responseJSON = [irrelevant, negative, neutral, positive]
+
+        print(JSONEncoder().encode(responseJSON))
         response = Response(response=JSONEncoder().encode(responseJSON), status=200, mimetype='application/json')
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'POST'
@@ -149,20 +199,15 @@ def get_job(job_id):
 @app.route('/jobs/history', methods=['POST'])
 def get_job_history():
     try:
-        client = MongoClient('mongodb://host.docker.internal:27017/', server_api=ServerApi('1'))
+        client = MongoClient('mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/?retryWrites=true&w=majority&appName=Cluster', server_api=ServerApi('1'))
         db = client['TwitterSentimentAnalysis']
         collection = db['jobs']
-        result = collection.distinct('job_id')
+        result = collection.find({}, {"_id": 0, "job_id": 1, "type": 1, "timestamp": 1})
+        
         responseJSON = []
-        """ 
         for i in result:
-            yield f'{JSONEncoder().encode(collection.find_one({'job_id': i}, {'_id':0, 'job_id': 1, 'type': 1, 'timestamp': 1}))}'
+            responseJSON.append(i)
 
-        return Response(stream_with_context(generate())) """
-        for i in result:
-            responseJSON.append(collection.find_one({'job_id': i}, {'_id':0, 'job_id': 1, 'type': 1, 'timestamp': 1}))
-
-        print(responseJSON)
         response = Response(response=JSONEncoder().encode(responseJSON), status=200, mimetype='application/json')
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'POST'
