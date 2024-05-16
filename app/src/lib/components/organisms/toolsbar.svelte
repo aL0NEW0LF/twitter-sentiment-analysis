@@ -105,6 +105,9 @@
 							<Dialog.Content class="w-96">
 								<Dialog.Header>
 									<Dialog.Title class="text-white">Predict With File</Dialog.Title>
+									<Dialog.Description class="text-white"
+										>The file should have a column named 'text' for the data to be processed.</Dialog.Description
+									>
 								</Dialog.Header>
 								{#if formLoading}
 									<div class="flex w-full justify-center"><Spinner color="gray" /></div>
