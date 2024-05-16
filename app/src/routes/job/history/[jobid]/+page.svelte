@@ -8,6 +8,12 @@
 	import { Label } from '$lib/components/ui/label/index.ts';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { onMount } from 'svelte';
+	import Spinner from '$lib/components/atoms/spinner.svelte';
+	import { Bar } from 'svelte-chartjs';
+	import { Chart, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
+	import { cn } from '@/utils';
+
+	Chart.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
 	$: job_id = $page.params.jobid;
 
@@ -19,7 +25,48 @@
 		console.log(jobDetails);
 		return jobDetails;
 	}
+
+	async function fetchPredictionsCount(job_id: string) {
+		const response = await fetch(`http://127.0.0.1:5000/jobs/${job_id}/count`, { method: 'POST' });
+
+		const predictions = await response.json();
+
+		const data = {
+			labels: ['Irrelevant', 'Negative', 'Neutral', 'Positive'],
+			datasets: [
+				{
+					label: 'Predictions',
+					data: predictions,
+					backgroundColor: [
+						'rgba(255, 255, 255, 1)',
+						'rgba(255, 255, 255, 1)',
+						'rgba(255, 255, 255, 1)',
+						'rgba(255, 255, 255, 1)'
+					]
+				}
+			]
+		};
+
+		return data;
+	}
 </script>
+
+<Dialog.Root>
+	<Dialog.Trigger><Button variant="outline">Predictions count</Button></Dialog.Trigger>
+	<Dialog.Content class="sm:max-w-[425px]">
+		<Dialog.Header>
+			<Dialog.Title>Predictions count</Dialog.Title>
+			<Dialog.Description>Here is a chart of the predictions count.</Dialog.Description>
+		</Dialog.Header>
+		{#await fetchPredictionsCount(job_id)}
+			<div class="flex w-full justify-center"><Spinner color="gray" /></div>
+		{:then data}
+			<Bar {data} />
+		{:catch error}
+			<p style="color: red">{error.message}</p>
+		{/await}
+	</Dialog.Content>
+</Dialog.Root>
 
 <Table.Root>
 	<Table.Caption>A list of your predictions history.</Table.Caption>
