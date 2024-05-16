@@ -9,6 +9,7 @@
 	import Spinner from '../atoms/spinner.svelte';
 
 	let formLoading = false;
+	$: formLoading;
 	let TextInputDialogOpen = false;
 	$: TextInputDialogOpen;
 	let FileUploadDialogOpen = false;
@@ -17,6 +18,7 @@
 	$: MenuBarOpen;
 
 	async function predictText(event: Event) {
+		formLoading = true;
 		const formElement = event.target as HTMLFormElement;
 
 		const formData = new FormData(formElement);
@@ -28,14 +30,14 @@
 
 		const responseData = await response.json();
 
-		console.log(responseData.job_id);
-
+		formLoading = false;
 		TextInputDialogOpen = false;
 		MenuBarOpen = false;
 		goto(`/job/history/${responseData.job_id}`);
 	}
 
 	async function predictFile(event: Event) {
+		formLoading = true;
 		const formElement = event.target as HTMLFormElement;
 
 		const formData = new FormData(formElement);
@@ -47,8 +49,7 @@
 
 		const responseData = await response.json();
 
-		console.log(responseData);
-
+		formLoading = false;
 		FileUploadDialogOpen = false;
 		MenuBarOpen = false;
 		goto(`/job/history/${responseData.job_id}`);
@@ -83,13 +84,6 @@
 										enctype="multipart/form-data"
 										class="flex flex-col gap-4"
 										on:submit|preventDefault={predictText}
-										use:enhance={() => {
-											formLoading = true;
-											return async ({ update }) => {
-												formLoading = false;
-												update();
-											};
-										}}
 									>
 										<Textarea
 											class="w-full text-white"
@@ -121,13 +115,6 @@
 										enctype="multipart/form-data"
 										class="flex flex-col gap-4"
 										on:submit|preventDefault={predictFile}
-										use:enhance={() => {
-											formLoading = true;
-											return async ({ update }) => {
-												formLoading = false;
-												update();
-											};
-										}}
 									>
 										<Input
 											class="w-full text-white"
