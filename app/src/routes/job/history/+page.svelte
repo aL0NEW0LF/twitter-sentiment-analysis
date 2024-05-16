@@ -1,13 +1,8 @@
 <script lang="ts">
 	import * as Table from '$lib/components/ui/table/index.ts';
-	import * as Dialog from '$lib/components/ui/dialog/index.ts';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.ts';
-	import { Input } from '$lib/components/ui/input/index.ts';
-	import { Label } from '$lib/components/ui/label/index.ts';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { error } from '@sveltejs/kit';
-	import type { PageData } from './$types';
 
 	async function fetchHistory() {
 		const response = await fetch('http://127.0.0.1:5000/jobs/history', { method: 'POST' });

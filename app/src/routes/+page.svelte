@@ -4,7 +4,6 @@
 	import './styles.css';
 
 	import logo from '$lib/assets/school.png';
-	import Docs from '@/components/organisms/docs.svelte';
 </script>
 
 <svelte:head>

@@ -2,16 +2,11 @@
 	import { page } from '$app/stores';
 	import * as Table from '$lib/components/ui/table/index.ts';
 	import * as Dialog from '$lib/components/ui/dialog/index.ts';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-	import { Button, buttonVariants } from '$lib/components/ui/button/index.ts';
-	import { Input } from '$lib/components/ui/input/index.ts';
-	import { Label } from '$lib/components/ui/label/index.ts';
+	import { Button } from '$lib/components/ui/button/index.ts';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { onMount } from 'svelte';
 	import Spinner from '$lib/components/atoms/spinner.svelte';
 	import { Bar } from 'svelte-chartjs';
 	import { Chart, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
-	import { cn } from '@/utils';
 
 	Chart.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 

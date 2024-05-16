@@ -1,6 +1,4 @@
-import time
-from urllib import response
-from flask import Response, jsonify, stream_with_context, request, Flask
+from flask import Response, request, Flask
 from flask_cors import CORS
 import pandas as pd
 from kafka import KafkaProducer, KafkaConsumer
