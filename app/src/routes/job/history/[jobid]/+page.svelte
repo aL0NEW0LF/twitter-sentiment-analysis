@@ -19,10 +19,12 @@
 
 	async function fetchJobDetails(job_id: string) {
 		const response = await fetch(`http://127.0.0.1:5000/jobs/${job_id}`, {
-			method: 'POST'
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			}
 		});
 		const jobDetails = await response.json();
-		console.log(jobDetails);
 		return jobDetails;
 	}
 
@@ -97,10 +99,10 @@
 				<Table.Row>
 					<Table.Cell class="w-1/2">{jobDetail.text}</Table.Cell>
 					<Table.Cell class="w-1/2">
-						<p>Irrelevant: {JSON.parse(jobDetail.probability)[0]}</p>
-						<p>Negative: {JSON.parse(jobDetail.probability)[1]}</p>
-						<p>Neutral: {JSON.parse(jobDetail.probability)[2]}</p>
-						<p>Positive: {JSON.parse(jobDetail.probability)[3]}</p>
+						<p>Irrelevant: {jobDetail.probability[0]}</p>
+						<p>Negative: {jobDetail.probability[1]}</p>
+						<p>Neutral: {jobDetail.probability[2]}</p>
+						<p>Positive: {jobDetail.probability[3]}</p>
 					</Table.Cell>
 					<Table.Cell class="w-40">{jobDetail.prediction}</Table.Cell>
 				</Table.Row>
