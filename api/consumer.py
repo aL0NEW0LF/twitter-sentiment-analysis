@@ -14,12 +14,33 @@ from pyspark.ml.tuning import CrossValidatorModel
 from pyspark.ml import PipelineModel
 import time
 import threading
+from pymongo import MongoClient
+import os
+
+os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-streaming-kafka-0-10_2.12:3.2.0,org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0 pyspark-shell'
 
 def write_row_in_mongo(df):
-    # mongo_uri = "mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]]"
-    mongo_uri = "mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/TwitterSentimentAnalysis.jobs?retryWrites=true&w=majority&appName=Cluster"
-    df.write.format("mongo").mode("append").option("uri", mongo_uri).save()
-
+    mongo_uri = "mongodb://host.docker.internal:27017/"
+    job_id = df.select('job_id').first()[0]
+    typ = df.select('type').first()[0]
+    timestamp = df.select('timestamp').first()[0]
+    df = df.drop('job_id', 'type', 'timestamp')
+    client = MongoClient(mongo_uri)
+    db = client["TwitterSentimentAnalysis"]
+    collection = db["jobs"]
+    existing_job = collection.find_one({"job_id": job_id})
+    if existing_job:
+        collection.update_one({"job_id": job_id}, {"$push": {"job_details": {"$each": df.toJSON().collect()}}})
+    else:
+        json_data = {
+            "job_id": job_id,
+            "type": typ,
+            "timestamp": timestamp,
+            "job_details": df.toJSON().collect()
+        }
+        collection.insert_one(json_data)
+    
+    # df.write.format("mongo").mode("append").option("uri", mongo_uri).save()
 def processTweet(tweet):
     
     if isinstance(tweet, (float, int)):
@@ -95,10 +116,6 @@ def process(df,epoch_id):
     
     spark_df = spark.createDataFrame(pdf)
     
-    # Load the pipline model and pre-trained model
-    pipeline = PipelineModel.load(path_to_model + 'pipelineFit')
-    cvModel = CrossValidatorModel.load(path_to_model + 'cvModel')
-    
     # Fit the pipeline to validation documents.
     preprocessed_dataset = pipeline.transform(spark_df)
     # predictions
@@ -113,7 +130,7 @@ def process(df,epoch_id):
         processed = 0
     logging.basicConfig(level=logging.INFO)
     # Start a new thread that checks the query status
-    producer = KafkaProducer(bootstrap_servers='localhost:9092')
+    producer = KafkaProducer(bootstrap_servers='TheKafkaShore:9092')
     threading.Thread(target=check_query_status, args=(query, producer, predictions, processed, df_len)).start()
     
 def check_query_status(query, producer, df, processed, df_len):
@@ -132,15 +149,16 @@ if __name__ == '__main__':
     findspark.init()
     
     # Path to the pre-trained model
-    path_to_model = r'api/modeling/saved-models/'
+    path_to_model = r'saved-models/'
+    # Load the pipline model and pre-trained model
+    pipeline = PipelineModel.load(path_to_model + 'pipelineFit')
+    cvModel = CrossValidatorModel.load(path_to_model + 'cvModel')
 
     spark = SparkSession \
         .builder \
         .master("local[*]") \
         .appName("TwitterSentimentAnalysis") \
-        .config("spark.mongodb.input.uri", "mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/TwitterSentimentAnalysis.jobs?retryWrites=true&w=majority&appName=Cluster") \
-        .config("spark.mongodb.output.uri", "mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/TwitterSentimentAnalysis.jobs?retryWrites=true&w=majority&appName=Cluster") \
-        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1") \
+        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2") \
         .getOrCreate()
 
     # Spark Context
@@ -155,14 +173,14 @@ if __name__ == '__main__':
         StructField("df_length", IntegerType()),
         StructField("timestamp", StringType())
     ])
-
+    
     # Read the data from kafka
     df = spark \
         .readStream \
         .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
+        .option("kafka.bootstrap.servers", "TheKafkaShore:9092") \
         .option("subscribe", "twitter") \
-        .option("maxOffsetsPerTrigger", "1000000") \
+        .option("maxOffsetsPerTrigger", 1000000) \
         .option("startingOffsets", "latest") \
         .option("header", "true") \
         .load() \
