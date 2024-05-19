@@ -132,7 +132,7 @@ def predict_text():
 @app.route('/jobs/<job_id>', methods=['POST'])
 def get_job(job_id):
     try:
-        client = MongoClient('mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/?retryWrites=true&w=majority&appName=Cluster', server_api=ServerApi('1'))
+        client = MongoClient('mongodb://host.docker.internal:27017/', server_api=ServerApi('1'))
         db = client['TwitterSentimentAnalysis']
         collection = db['jobs']
         result = collection.find({"job_id": job_id}, {"_id": 0, "job_id": 0, "type": 0, "timestamp": 0})
@@ -156,7 +156,7 @@ def get_job(job_id):
 @app.route('/jobs/<job_id>/count', methods=['POST'])
 def get_job_count(job_id):
     try:
-        client = MongoClient('mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/?retryWrites=true&w=majority&appName=Cluster', server_api=ServerApi('1'))
+        client = MongoClient('mongodb://host.docker.internal:27017/', server_api=ServerApi('1'))
         db = client['TwitterSentimentAnalysis']
         collection = db['jobs']
         result = collection.find({"job_id": job_id}, {"_id": 0, "job_id": 0, "type": 0, "timestamp": 0})
@@ -196,7 +196,7 @@ def get_job_count(job_id):
 @app.route('/jobs/history', methods=['POST'])
 def get_job_history():
     try:
-        client = MongoClient('mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/?retryWrites=true&w=majority&appName=Cluster', server_api=ServerApi('1'))
+        client = MongoClient('mongodb://host.docker.internal:27017/', server_api=ServerApi('1'))
         db = client['TwitterSentimentAnalysis']
         collection = db['jobs']
         result = collection.distinct('job_id')
