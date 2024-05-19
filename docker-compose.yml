@@ -1,4 +1,4 @@
-version: '2.1'
+version: "2.1"
 
 services:
   TheZooKeeper:
@@ -54,7 +54,5 @@ services:
     build:
       context: .
       dockerfile: consumer.Dockerfile
-    ports:
-      - "27017:27017"
     depends_on:
       - TheKafkaShore
