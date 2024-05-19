@@ -136,9 +136,10 @@ def get_job(job_id):
         db = client['TwitterSentimentAnalysis']
         collection = db['jobs']
         result = collection.find({"job_id": job_id}, {"_id": 0, "job_id": 0, "type": 0, "timestamp": 0})
+        responseJSON = []
+        for i in result:
+            responseJSON.append(i)
         
-        responseJSON = parse_job_details(result)
-        print(responseJSON)
         response = Response(response=JSONEncoder().encode(responseJSON), status=200, mimetype='application/json')
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'POST'
@@ -160,8 +161,6 @@ def get_job_count(job_id):
         collection = db['jobs']
         result = collection.find({"job_id": job_id}, {"_id": 0, "job_id": 0, "type": 0, "timestamp": 0})
         
-        result = parse_job_details(result)
-
         # prediction values count
         positive = 0
         negative = 0
@@ -200,12 +199,13 @@ def get_job_history():
         client = MongoClient('mongodb+srv://samatshi:2vL3J8ENgOpb69f0@cluster.gjv97ym.mongodb.net/?retryWrites=true&w=majority&appName=Cluster', server_api=ServerApi('1'))
         db = client['TwitterSentimentAnalysis']
         collection = db['jobs']
-        result = collection.find({}, {"_id": 0, "job_id": 1, "type": 1, "timestamp": 1})
-        
+        result = collection.distinct('job_id')
         responseJSON = []
-        for i in result:
-            responseJSON.append(i)
 
+        for i in result:
+            responseJSON.append(collection.find_one({'job_id': i}, {'_id':0, 'job_id': 1, 'type': 1, 'timestamp': 1}))
+
+        print(responseJSON)
         response = Response(response=JSONEncoder().encode(responseJSON), status=200, mimetype='application/json')
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'POST'

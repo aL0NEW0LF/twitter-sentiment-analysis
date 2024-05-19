@@ -56,7 +56,7 @@
 			<Dialog.Description>Here is a chart of the predictions count.</Dialog.Description>
 		</Dialog.Header>
 		{#await fetchPredictionsCount(job_id)}
-			<div class="flex w-full justify-center"><Spinner color="gray" /></div>
+			<div class="flex w-full justify-center"><Spinner color="gray" class="w-12" /></div>
 		{:then data}
 			<Bar {data} />
 		{:catch error}
@@ -94,10 +94,10 @@
 				<Table.Row>
 					<Table.Cell class="w-1/2">{jobDetail.text}</Table.Cell>
 					<Table.Cell class="w-1/2">
-						<p>Irrelevant: {jobDetail.probability[0]}</p>
-						<p>Negative: {jobDetail.probability[1]}</p>
-						<p>Neutral: {jobDetail.probability[2]}</p>
-						<p>Positive: {jobDetail.probability[3]}</p>
+						<p>Irrelevant: {JSON.parse(jobDetail.probability)[0]}</p>
+						<p>Negative: {JSON.parse(jobDetail.probability)[1]}</p>
+						<p>Neutral: {JSON.parse(jobDetail.probability)[2]}</p>
+						<p>Positive: {JSON.parse(jobDetail.probability)[3]}</p>
 					</Table.Cell>
 					<Table.Cell class="w-40">{jobDetail.prediction}</Table.Cell>
 				</Table.Row>
