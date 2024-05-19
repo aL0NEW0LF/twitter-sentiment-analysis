@@ -17,30 +17,12 @@ import threading
 from pymongo import MongoClient
 import os
 
-os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-streaming-kafka-0-10_2.12:3.2.0,org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0 pyspark-shell'
+os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-streaming-kafka-0-10_2.12:3.2.0,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1,org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0 pyspark-shell'
 
 def write_row_in_mongo(df):
-    mongo_uri = "mongodb://host.docker.internal:27017/"
-    job_id = df.select('job_id').first()[0]
-    typ = df.select('type').first()[0]
-    timestamp = df.select('timestamp').first()[0]
-    df = df.drop('job_id', 'type', 'timestamp')
-    client = MongoClient(mongo_uri)
-    db = client["TwitterSentimentAnalysis"]
-    collection = db["jobs"]
-    existing_job = collection.find_one({"job_id": job_id})
-    if existing_job:
-        collection.update_one({"job_id": job_id}, {"$push": {"job_details": {"$each": df.toJSON().collect()}}})
-    else:
-        json_data = {
-            "job_id": job_id,
-            "type": typ,
-            "timestamp": timestamp,
-            "job_details": df.toJSON().collect()
-        }
-        collection.insert_one(json_data)
+    mongo_uri = "mongodb://host.docker.internal:27017/TwitterSentimentAnalysis.jobs"
+    df.write.format("mongo").mode("append").option("uri", mongo_uri).save()
     
-    # df.write.format("mongo").mode("append").option("uri", mongo_uri).save()
 def processTweet(tweet):
     
     if isinstance(tweet, (float, int)):
@@ -159,6 +141,8 @@ if __name__ == '__main__':
         .master("local[*]") \
         .appName("TwitterSentimentAnalysis") \
         .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2") \
+        .config("spark.mongodb.input.uri", "mongodb://host.docker.internal:27017/TwitterSentimentAnalysis.jobs") \
+        .config("spark.mongodb.output.uri", "mongodb://host.docker.internal:27017/TwitterSentimentAnalysis.jobs") \
         .getOrCreate()
 
     # Spark Context
