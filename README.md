@@ -66,16 +66,16 @@ docker-compose -f docker-compose.yml up -d
 then go to the `TheKafkaShore` container command line to create the kafka topics with:
 
 ```bash
-kafka-topics --create --topic twitter --bootstrap-server localhost:9092
+kafka-topics --create --topic twitter --bootstrap-server TheKafkaShore:9092
 ```
 
 ```bash
-kafka-topics --create --topic job_id --bootstrap-server localhost:9092
+kafka-topics --create --topic job_id --bootstrap-server TheKafkaShore:9092
 ```
 Then you are good to go.
 
 # TODO
 
-- [ ] Change saving jéSon schema to mongodb.
+- [ ] Change saving jéSon schema to mongodb for data storage optimization.
 - [ ] Add streaming tweet and one by one treatment.
 - [ ] Add .env variables to remove hard coded variables.
