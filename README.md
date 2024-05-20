@@ -4,7 +4,7 @@ This project is an app backboned by a distributed system that performs sentiment
 
 ## Architecture
 
-![[app.png]]
+![Architecture](https://github.com/aL0NEW0LF/twitter-sentiment-analysis/blob/main/app.png?raw=true)
 
 The system is composed of 3 layers:
 
