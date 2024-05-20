@@ -34,41 +34,44 @@ The sentiment analysis model is a pre-trained Cross-Validation & Logistic Regres
 
 First, clone the repository:
 
-bash
+```bash
 git clone https://github.com/aL0NEW0LF/twitter-sentiment-analysis
-
+```
 
 ### Frontend
 
-To run the frontend, navigate to the app directory and run the following commands:
+To run the frontend, navigate to the `app` directory and run the following commands:
 
-bash
+```bash
 cd app
+```
 
-bash
+```bash
 pnpm install
-
+```
 
 To start the frontend, run the following command:
 
-bash
+```bash
 pnpm run dev --open
-
+```
 
 ### Backend
 
 To run the backend, you should compose the docker containers with:
-bash
+```bash
 docker-compose -f docker-compose.yml up -d
+```
 
+then go to the `TheKafkaShore` container command line to create the kafka topics with:
 
-then go to the TheKafkaShore container command line to create the kafka topics with:
-bash
+```bash
 kafka-topics --create --topic twitter --bootstrap-server localhost:9092
+```
 
-bash
+```bash
 kafka-topics --create --topic job_id --bootstrap-server localhost:9092
-
+```
 Then you are good to go.
 
 # TODO
