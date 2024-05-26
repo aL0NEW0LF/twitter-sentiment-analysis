@@ -76,7 +76,7 @@
 									<Dialog.Title class="text-white">Predict With Text</Dialog.Title>
 								</Dialog.Header>
 								{#if formLoading}
-									<div class="flex w-full justify-center"><Spinner color="gray" /></div>
+									<div class="flex w-full justify-center"><Spinner color="gray" class="w-12" /></div>
 								{:else}
 									<form
 										method="post"
@@ -110,7 +110,7 @@
 									>
 								</Dialog.Header>
 								{#if formLoading}
-									<div class="flex w-full justify-center"><Spinner color="gray" /></div>
+									<div class="flex w-full justify-center"><Spinner color="gray" class="w-12" /></div>
 								{:else}
 									<form
 										method="post"
